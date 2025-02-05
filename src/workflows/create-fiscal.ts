@@ -28,10 +28,11 @@ const createFiscalStep = createStep(
                 country: input.country,
                 data: input.data
             })
+            console.log("fiscalData", fiscalData)
             // for every parcel, check if exists and if not create it, and if yes, update it
             linkDefs.push({
                 [MASFACTURA_MODULE]: {
-                  "fiscal_id": fiscalData[0].id
+                  "fiscal_id": fiscalData.id
                 },
                 [Modules.CUSTOMER]: {
                   "customer_id": input.customerId

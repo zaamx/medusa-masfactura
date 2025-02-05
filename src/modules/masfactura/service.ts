@@ -86,13 +86,9 @@ class MasFacturaModuleService extends MedusaService({
     }
 }'
     */
-    // async createMexicanFactura(customerId: string, orderId: string) {
-    //     const customer = await this.retrieve(customerId)
-    //     const fiscal = await this.create({
-    //         country: "MX",
-    //         data: customer
-    //     })
-    // }
+    async createMexicanFactura(fiscalObject, orderObject) {
+        
+    }
 }
 
 export default MasFacturaModuleService
