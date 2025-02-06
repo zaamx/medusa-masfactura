@@ -14,7 +14,8 @@ import { getOrderDetailWorkflow } from "@medusajs/medusa/core-flows"
 
 type CreateFacturaInput = {
     orderId: string,
-    fiscalId: string
+    fiscalId: string,
+    order: any
 }
 
 const createFacturaStep = createStep(
@@ -23,64 +24,37 @@ const createFacturaStep = createStep(
     async (input: CreateFacturaInput, { container }) => {
         const linkDefs: LinkDefinition[] = []
         const masFacturaService: MasFacturaModuleService = container.resolve(MASFACTURA_MODULE)
-        const orderService = container.resolve(Modules.ORDER)
         try {
             const fiscalInfo = await masFacturaService.retrieveFiscal(input.fiscalId)
-            const { result } = await getOrderDetailWorkflow(container)
-            .run({
-                input: {
-                    order_id: input.orderId,
-                    fields: ["*", "items.*", "customer.*", "shipping_address.*", "billing_address.*",
-                        "status",
-                        "summary.*",
-                        "total",
-                        "subtotal",
-                        "tax_total",
-                        "discount_total",
-                        "discount_subtotal",
-                        "discount_tax_total",
-                        "original_total",
-                        "original_tax_total",
-                        "item_total",
-                        "item_subtotal",
-                        "item_tax_total",
-                        "original_item_total",
-                        "original_item_subtotal",
-                        "original_item_tax_total",
-                        "shipping_total",
-                        "shipping_subtotal",
-                        "shipping_tax_total",
-                        "original_shipping_tax_total",
-                        "original_shipping_subtotal",
-                        "original_shipping_total",
-                    ]
-                }
+            const order = input.order
+            const factura = await masFacturaService.createMexicanFactura(fiscalInfo, order)
+            // console.log("factura", factura)
+            // store the result in the database
+            
+            const taxInvoice = await masFacturaService.createTaxInvoices({
+                country: fiscalInfo.country,
+                data: factura
             })
-            console.log("fiscalInfo", fiscalInfo)
-            console.log("order", result) 
+            console.log("taxInvoice", taxInvoice.id)
             // for every parcel, check if exists and if not create it, and if yes, update it
-            // linkDefs.push({
-            //     [MASFACTURA_MODULE]: {
-            //       "taxinvoice_id": fiscalInfo.id
-            //     },
-            //     [Modules.ORDER]: {
-            //       "order_id": input.orderId
-            //     }
-            //   })
-        return new StepResponse({success: true, order: result, fiscal: fiscalInfo})
+            console.log("order id ", input.orderId)
+            linkDefs.push({
+                [Modules.ORDER]: {
+                    "order_id": input.orderId
+                },
+                [MASFACTURA_MODULE]: {
+                    "taxinvoice_id": taxInvoice.id
+                },
+            })
+            console.log("linkDefs", linkDefs)
+            
+        return new StepResponse({success: true, taxInvoice: factura, linkDefs})
         } catch (error) {
             console.error("Error in createFiscalStep ", error)
             return new StepResponse({
                 success: false, 
-                order: {} as any, 
-                fiscal: {
-                    id: "",
-                    country: "",
-                    data: {},
-                    created_at: new Date(),
-                    updated_at: new Date(),
-                    deleted_at: null
-                }
+                taxInvoice: {} as any,
+                linkDefs: []
             })
         }
     }
@@ -90,11 +64,10 @@ export const createFacturaMXWorkflow = createWorkflow(
     "create-factura",
     (input: CreateFacturaInput) => {
       const facturaResult = createFacturaStep(input)
-      // createRemoteLinkStep(facturaResult.linkDefs)
+      createRemoteLinkStep(facturaResult.linkDefs)
       return new WorkflowResponse({ 
         success: true, 
-        order: facturaResult.order,
-        fiscal: facturaResult.fiscal
+        taxInvoice: facturaResult.taxInvoice
       })
     }
   )

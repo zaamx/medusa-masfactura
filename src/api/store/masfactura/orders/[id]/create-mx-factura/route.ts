@@ -6,18 +6,20 @@ import { createFacturaMXWorkflow } from "../../../../../../workflows/create-mx-f
 
 type CreateFacturaInput = {
     orderId: string,
-    fiscalId: string
+    fiscalId: string,
+    order: any
 }
 
 export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
-    const { orderId, fiscalId } = req.body as CreateFacturaInput
+    const { orderId, fiscalId, order } = req.body as CreateFacturaInput
     try {   
         const { result } = await createFacturaMXWorkflow(
             req.scope
         ).run({
             input: {
                 orderId,
-                fiscalId
+                fiscalId,
+                order
             }
         })
         res.status(200).json(result)

@@ -87,8 +87,87 @@ class MasFacturaModuleService extends MedusaService({
 }'
     */
     async createMexicanFactura(fiscalObject, orderObject) {
-        
+        try {
+            const requestBody = {
+                General: {
+                    Moneda: orderObject.currency_code.toUpperCase(),
+                    MetodoPago: "PUE", // Assuming this is fixed
+                    FormaPago: "03", // Assuming this is fixed
+                    LugarExpedicion: "52937", //fiscalObject.data.Direccion.Cp, // 52929
+                    Serie: "A", // Assuming this is fixed
+                    Totales: {
+                        ImporteSubtotal: orderObject.subtotal.toString(),
+                        ImporteDescuento: orderObject.discount_total,
+                        ImporteIVA: orderObject.tax_total.toString(),
+                        ImporteTotal: orderObject.total.toString()
+                    }
+                },
+                Receptor: {
+                    Rfc: fiscalObject.data.Rfc,
+                    Nombre: fiscalObject.data.Nombre,
+                    tipoPersona: fiscalObject.data.tipoPersona,
+                    RegimenFiscalReceptor: fiscalObject.data.RegimenFiscalReceptor,
+                    UsoCFDI: fiscalObject.data.UsoCFDI,
+                    eMail: fiscalObject.data.eMail,
+                    Direccion: {
+                        Cp: fiscalObject.data.Direccion.Cp,
+                        Calle: fiscalObject.data.Direccion.Calle,
+                        NoExterior: fiscalObject.data.Direccion.NoExterior,
+                        NoInterior: fiscalObject.data.Direccion.NoInterior,
+                        Localidad: fiscalObject.data.Direccion.Localidad,
+                        Pais: fiscalObject.data.Direccion.Pais,
+                        Estado: fiscalObject.data.Direccion.Estado,
+                        Municipio: fiscalObject.data.Direccion.Municipio
+                    }
+                },
+                Conceptos: orderObject.items.map(item => ({
+                    ClaveProdServicio: "40101801", // Assuming this is fixed
+                    Cantidad: item.quantity.toString(),
+                    ClaveUnidad: "H87", // Assuming this is fixed
+                    Unidad: "Pieza",
+                    Descripcion: item.title,
+                    ValorUnitario: item.unit_price.toString(),
+                    Importe: item.subtotal.toString(),
+                    ObjetoImp: "02", // Assuming this is fixed
+                    Descuento: item.discount_total.toString()
+                })),
+                Traslados: {
+                    Base: orderObject.subtotal,
+                    Importe: orderObject.tax_total,
+                    Impuesto: "002", // Assuming this is fixed
+                    TasaOCuota: 0.16, // Assuming this is fixed
+                    TipoFactor: "Tasa"
+                }
+            };
+            // console.log("requestBody", requestBody)
+            const response = await fetch(
+                'https://api.web.masfactura.app/api/fac-facturas/bill-it/RDI230524EX5',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                }
+            );
+            // console.log("response", response)
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Failed to create factura: ${response.status} - ${errorData}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            this.logger_.error(`Error creating Mexican factura: ${error.message}`);
+            throw error;
+        }
     }
+    async listTaxinvoices(filters, config) {
+        return await this.listTaxInvoices(filters, config)
+    }
+    
 }
 
 export default MasFacturaModuleService

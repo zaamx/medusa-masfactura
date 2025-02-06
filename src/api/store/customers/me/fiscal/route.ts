@@ -44,7 +44,7 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
             fields: ["*", "fiscals.*"],
             filters: { id: customerId }
         })
-        console.log('customers with fiscal data', customers)
+        // console.log('customers with fiscal data', customers)
         res.status(200).json(customers)
     } catch (error) {
         res.status(500).json({ error: error.message })
