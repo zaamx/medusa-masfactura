@@ -76,3 +76,7 @@ npx medusa plugin:db:generate
 
 On Medusa Main Project
 npx medusa db:migrate
+
+on MasFactura Module
+npx medusa plugin:build 
+npm publish --access public
